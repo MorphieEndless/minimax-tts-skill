@@ -187,6 +187,8 @@ def strip_markdown_inline(text):
     text = re.sub(r"(?<!_)_([^_]+)_(?!_)", r"\1", text)
     # 脚注引用
     text = re.sub(r"\[\^[^\]]+\]", "", text)
+    # 残留的未配对反引号（HTML 剥离 <meta> 等造成）直接清除
+    text = text.replace("`", "")
     return text
 
 
@@ -420,10 +422,15 @@ class Converter:
                 i += 1
                 continue
             # 缩进代码块：连续 >=2 行 4 空格缩进才判定为代码
-            if re.match(r"^ {4}\S", ln):
+            # 排除：缩进的列表项 / 引用 / 任务项（它们是 Markdown 排版，不是代码）
+            def _is_indent_code(s):
+                if not re.match(r"^ {4}\S", s):
+                    return False
+                return not re.match(r"^ {4}(?:[-*+]|\d+[.)]|>)\s", s)
+            if _is_indent_code(ln):
                 j = i
                 code_lines = []
-                while j < len(lines) and (lines[j].strip() == "" or re.match(r"^ {4}\S", lines[j])):
+                while j < len(lines) and (lines[j].strip() == "" or _is_indent_code(lines[j])):
                     if lines[j].strip():
                         code_lines.append(lines[j][4:])
                     j += 1
@@ -487,6 +494,8 @@ class Converter:
 
     # -- 阶段 3：HTML -----------------------------------------------------
     def process_html(self, text):
+        # 反引号内的 HTML 标签（如 `<meta>`、`<div>`）保留标签名，供朗读
+        text = re.sub(r"`<([a-zA-Z][a-zA-Z0-9]*)>`", r"`\1`", text)
         # 实体
         entities = {
             "&nbsp;": " ", "&amp;": "和", "&lt;": "小于", "&gt;": "大于",
@@ -574,7 +583,7 @@ class Converter:
             m = re.match(r"^\s*>\s?(.*)$", ln)
             if m:
                 flush()
-                out.append(m.group(1))
+                out.append(strip_markdown_inline(m.group(1)))
                 i += 1
                 continue
 
@@ -677,7 +686,8 @@ class Converter:
         # 省略号与破折号（所有档位）
         text, n1 = re.subn(r"……+", "<#0.4#>", text)
         pauses += n1
-        text, n2 = re.subn(r"\.{3,}", "<#0.4#>", text)
+        # 英文省略号（排除 A8AB...2D16 这类密钥/路径缩写，前后都是字母数字时不动）
+        text, n2 = re.subn(r"(?<![A-Za-z0-9])\.{3,}(?![A-Za-z0-9])", "<#0.4#>", text)
         pauses += n2
         text, n3 = re.subn(r"——+", "<#0.3#>", text)
         pauses += n3
