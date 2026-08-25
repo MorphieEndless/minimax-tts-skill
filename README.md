@@ -1,5 +1,7 @@
 # minimax-tts-format（海螺语音文稿格式化）
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 把 Markdown / LaTeX / HTML / 代码 / 口语动作标注混合的文稿，转换为 MiniMax 海螺语音（speech-2.8 系列）可直接合成的朗读文本。
 
 ## 结构
@@ -61,3 +63,7 @@ python3 scripts/convert_to_tts.py tests/test_edge.md    # 边界用例
 官方文档《同步语音合成 HTTP》：https://platform.minimaxi.com/docs/api-reference/speech-t2a-http
 
 > 语气词标签仅 `speech-2.8-hd` / `speech-2.8-turbo` 支持；2.6 及以下模型请勿使用，脚本会自动清除。
+
+## License
+
+[MIT](LICENSE) © 2026 MorphieEndless
